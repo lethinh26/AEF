@@ -1,0 +1,26 @@
+api_version: aeo/v1alpha1
+kind: EngineeringGoal
+metadata:
+  id: checkout-reliability
+  tenant_id: internal
+  owner_user_id: lead-engineer
+  version: 1
+spec:
+  objective: "Duy trì độ tin cậy checkout trong phạm vi được phê duyệt"
+  asset_scope: [shop-checkout-repo, checkout-api]
+  horizon: '2027-03-31'
+  measures:
+    - id: checkout_availability
+      sli: 'eligible_successful_checkout_requests / eligible_checkout_requests'
+      target: 0.999
+      window: 30d
+      source: 'otel://checkout/availability'
+      minimum_samples: 10000
+  guardrails:
+    - id: no_duplicate_orders
+      expression: 'duplicate_order_rate <= approved_baseline'
+  autonomy_profile: branch_only
+  spending:
+    budget_usd_per_month: 100
+    per_mission_usd: 10
+  stop_conditions: [owner_revoked, source_stale, policy_violation]

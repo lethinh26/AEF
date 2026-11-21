@@ -1,0 +1,21 @@
+api_version: aeo/v1alpha1
+kind: Opportunity
+metadata:
+  id: opp-ci-flakiness-01
+  tenant_id: internal
+spec:
+  goal_refs: [checkout-reliability@1]
+  finding_refs: [finding-ci-001]
+  asset_scope: [shop-checkout-repo]
+  candidate_action: 'Investigate recurring CI checkout failure'
+  evidence_refs: [event-ci-301, event-ci-305, event-ci-309]
+  expected_outcome: 'Decrease flaky CI reruns with regression evidence'
+  alternatives:
+    - 'Continue monitoring until source reliability improves'
+    - 'Escalate when CI image owner is unavailable'
+  risks: [false_cause_attribution, ci_infrastructure_mutation]
+  uncertainty: medium
+  proposed_autonomy: read_only_investigation
+  estimated_cost_usd: 4
+  expires_after_hours: 48
+  status: PROPOSED

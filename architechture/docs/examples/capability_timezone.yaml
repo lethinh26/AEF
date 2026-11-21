@@ -1,0 +1,22 @@
+api_version: aeo/v1alpha1
+kind: Capability
+metadata:
+  id: timezone-boundary-verification
+  version: 0.1.0
+  owner: internal-platform
+spec:
+  purpose: 'Validate timezone boundary handling in date-sensitive workflows'
+  prerequisites: [time_zone_business_rule_known, test_environment_available]
+  exclusions: [ambiguous_business_timezone, unauthorized_customer_data]
+  applicability:
+    domains: [commerce, crm]
+    languages: [python, javascript]
+    environment: sandbox
+  input_contract: schemas/timezone-input.schema.json
+  output_contract: schemas/timezone-results.schema.json
+  process_ref: playbooks/timezone-validation.md
+  verifier_ref: heldout/timezone-v1
+  required_permissions: [repo_read, branch_write, run_tests]
+  provenance: [mission-demo-01]
+  trust_tier: CANDIDATE
+  redistribution: internal_only

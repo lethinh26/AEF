@@ -1,0 +1,34 @@
+api_version: aeo/v1alpha1
+kind: Mission
+metadata:
+  id: mission-ci-001
+  tenant_id: internal
+spec:
+  goal_ref: checkout-reliability@1
+  opportunity_ref: opp-ci-flakiness-01
+  type: INVESTIGATE_AND_REPAIR
+  objective: 'Identify and patch the cause of a reproducible checkout CI regression'
+  target:
+    repository: shop-checkout-repo
+    base_commit: abc1234
+    branch: aeo/mission-ci-001
+    environment: sandbox
+  acceptance:
+    - id: baseline_reproducible
+      required: true
+      verifier: ci-regression-before
+    - id: patch_passes_hidden_tests
+      required: true
+      verifier: ci-regression-after
+  constraints:
+    protected_paths: ['infra/production/**', '.env*']
+    forbidden_actions: [merge_main, deploy_production, export_secrets]
+  permissions:
+    mode: branch_only
+    can_create_pr: true
+  resources:
+    max_steps: 40
+    max_repair_cycles: 2
+    timeout_seconds: 1800
+    max_model_requests: 60
+  delivery: pull_request
