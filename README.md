@@ -29,14 +29,14 @@ The initial deployment uses separate API and worker processes over a shared modu
 
 - Python 3.12 or 3.13
 - [uv](https://docs.astral.sh/uv/)
-- Node.js 22 or newer
+- Node.js 24 or newer
 - [pnpm](https://pnpm.io/)
 - Docker Engine/Desktop with Docker Compose
 
 ## Local development
 
 1. Copy `.env.example` to `.env`. Change local-only passwords if needed.
-   To configure a different API URL, copy the web example and edit `NEXT_PUBLIC_AEO_API_URL`:
+   To configure the API URL used by the Next.js server-side health proxy, copy the web example and edit `AEO_API_INTERNAL_URL`:
    ```powershell
    Copy-Item apps/web/.env.local.example apps/web/.env.local
    ```
@@ -84,6 +84,20 @@ pnpm lint:web
 pnpm build:web
 docker compose config
 ```
+
+## Containerized application stack
+
+The base Compose file starts local infrastructure only. To run the API, migration step, worker and web app as containers as well:
+
+```powershell
+docker compose -f compose.yaml -f compose.application.yaml up --build -d
+```
+
+The application overlay binds the API and web ports to loopback only. The migration container must complete before the API and worker start. Use non-default credentials for any shared environment.
+
+## GitHub delivery pipeline
+
+All changes to `main` go through a reviewed pull request. Backend, frontend, container-build (including Trivy HIGH/CRITICAL image scanning), dependency-review and CodeQL checks are required. Dependabot monitors Python, pnpm, Docker base images and GitHub Actions. After merge, GitHub Actions publishes API, worker and web images to GHCR with commit-specific tags, provenance and SBOM attestations. Staging deployment is not enabled until a real staging host and credentials are provisioned; production deployment is outside the current V0/V1 scope. See [`docs/runbooks/release-pipeline.md`](./docs/runbooks/release-pipeline.md).
 
 ## Safety boundaries
 
