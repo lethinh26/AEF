@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 
 type ConnectionState = "checking" | "connected" | "unavailable";
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_AEO_API_URL ?? "http://127.0.0.1:8100";
-
 export function ApiStatus() {
   const [state, setState] = useState<ConnectionState>("checking");
 
@@ -15,7 +13,7 @@ export function ApiStatus() {
 
     async function checkApi() {
       try {
-        const response = await fetch(`${apiBaseUrl}/health/live`, {
+        const response = await fetch("/api/health/live", {
           cache: "no-store",
           signal: controller.signal,
         });
