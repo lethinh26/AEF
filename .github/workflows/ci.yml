@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: aeo
+          POSTGRES_USER: aeo
+          POSTGRES_PASSWORD: aeo_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aeo -d aeo"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      AEO_ENVIRONMENT: ci
+      AEO_DATABASE_URL: postgresql+asyncpg://aeo:aeo_ci_password@127.0.0.1:5432/aeo
+      AEO_TEST_DATABASE_URL: postgresql+asyncpg://aeo:aeo_ci_password@127.0.0.1:5432/aeo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install Python workspace
+        run: uv sync --all-packages --all-groups --locked
+      - name: Lint Python
+        run: uv run ruff check apps packages infra/migrations
+      - name: Apply database migrations
+        run: uv run alembic -c infra/migrations/alembic.ini upgrade head
+      - name: Test Python
+        run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+          run_install: false
+      - name: Install Node workspace
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck:web
+      - name: Lint
+        run: pnpm lint:web
+      - name: Build
+        run: pnpm build:web

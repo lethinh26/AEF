@@ -1,0 +1,11 @@
+{
+  "name": "@aeo/root",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "dev:web": "pnpm --filter @aeo/web dev",
+    "build:web": "pnpm --filter @aeo/web build",
+    "lint:web": "pnpm --filter @aeo/web lint",
+    "typecheck:web": "pnpm --filter @aeo/web typecheck"
+  }
+}

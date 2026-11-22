@@ -1,0 +1,19 @@
+{
+  "event_id": "d5fdf8e5-8a9f-4f10-bd1b-8c55d4e6f101",
+  "event_type": "observation.received",
+  "event_version": 1,
+  "aggregate_type": "observation",
+  "aggregate_id": "4b2e87d5-4d15-4cb7-a5ef-b2f4f7a0a101",
+  "aggregate_version": 1,
+  "tenant_id": "8b7e7c7a-b2ac-4eaf-9f67-1c2e6f1a0101",
+  "occurred_at": "2026-11-22T08:00:00Z",
+  "observed_at": "2026-11-22T08:00:02Z",
+  "actor": "service:github-connector",
+  "correlation_id": "b7d1a6cc-8a7d-4c77-a09b-f8d6f1a0101",
+  "payload": {
+    "source_key": "github:org/repository",
+    "source_event_id": "ci-run-1842",
+    "event_type": "workflow_run.completed",
+    "conclusion": "failure"
+  }
+}
