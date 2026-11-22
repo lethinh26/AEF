@@ -7,12 +7,16 @@ type SyncState = "idle" | "loading" | "queued" | "error";
 export function SourceSyncButton({ disabled = false }: { disabled?: boolean }) {
   const [state, setState] = useState<SyncState>("idle");
   const [message, setMessage] = useState("");
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   async function syncSources() {
     setState("loading");
     setMessage("");
     try {
-      const response = await fetch("/api/sources/sync", { method: "POST" });
+      const response = await fetch("/api/sources/sync", {
+        method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
+      });
       const body = await response.json();
       if (!response.ok) {
         const detail = body.detail;

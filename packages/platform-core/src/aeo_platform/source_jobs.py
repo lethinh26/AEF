@@ -67,7 +67,7 @@ async def queue_due_github_syncs(
     statement = select(SourceConnection).where(
         SourceConnection.provider == "github",
         SourceConnection.status == "active",
-        SourceConnection.sync_status.in_(["idle", "failed"]),
+        SourceConnection.sync_status.in_(["idle", "failed", "running"]),
     )
     if not force:
         statement = statement.where(SourceConnection.next_sync_at <= now)

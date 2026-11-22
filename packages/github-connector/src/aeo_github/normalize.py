@@ -231,7 +231,7 @@ def normalize_workflow_run(
         "html_url": _github_url(item.get("html_url")),
     }
     return NormalizedObservation(
-        source_event_id=f"workflow_run:{run_id}:{attempt}:{updated_at or 'unknown'}",
+        source_event_id=f"workflow_run:{run_id}:{attempt}",
         event_type="github.workflow_run.observed",
         title=f"{name} · {conclusion}",
         summary=(

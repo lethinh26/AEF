@@ -42,7 +42,7 @@ def test_workflow_run_normalization_preserves_ci_outcome() -> None:
 
     assert observation.payload["conclusion"] == "failure"
     assert observation.payload["run_attempt"] == 2
-    assert observation.external_url.endswith("/123")
+    assert observation.source_event_id == "workflow_run:123:2"
 
 
 def test_text_redactor_handles_github_tokens_and_bearer_values() -> None:

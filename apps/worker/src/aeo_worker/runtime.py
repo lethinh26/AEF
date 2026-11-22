@@ -12,7 +12,7 @@ from aeo_platform.bootstrap import ensure_configured_github_sources
 from aeo_platform.config import get_settings
 from aeo_platform.db import get_session_factory
 from aeo_platform.logging import configure_logging
-from aeo_platform.models import Job
+from aeo_platform.models import Job, SourceConnection
 from aeo_platform.source_jobs import queue_due_github_syncs
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -63,6 +63,21 @@ async def claim_job(
                 stale_job.locked_at = None
                 stale_job.locked_by = None
                 stale_job.last_error = "Worker lease expired; execution may be retried"
+                if stale_job.job_type == "github.sync":
+                    source_id = stale_job.payload.get("source_connection_id")
+                    if source_id:
+                        await session.execute(
+                            update(SourceConnection)
+                            .where(
+                                SourceConnection.id == UUID(source_id),
+                                SourceConnection.sync_status == "running",
+                            )
+                            .values(
+                                sync_status="failed",
+                                last_error_code="worker_lease_expired",
+                                next_sync_at=now,
+                            )
+                        )
                 if stale_job.attempts >= stale_job.max_attempts:
                     stale_job.status = "dead"
                 else:
@@ -200,7 +215,9 @@ async def run_worker(
         if now_monotonic - last_source_schedule >= 30:
             settings = get_settings()
             allowed_repositories = (
-                None if settings.github_token_value else settings.github_public_repositories
+                settings.github_repositories
+                if settings.github_token_value
+                else settings.github_public_repositories
             )
             if settings.github_token_value or allowed_repositories:
                 async with factory() as session:

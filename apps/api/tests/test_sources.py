@@ -29,11 +29,18 @@ async def test_github_sync_queues_public_sources_without_private_token(monkeypat
         assert allowed_repositories == ["lethinh26/Clucky"]
         return [uuid4()]
 
+    async def claim_idempotency(*_args, **_kwargs):
+        return SimpleNamespace(response_body=None), None
+
+    monkeypatch.setattr("aeo_api.routes.sources.claim_idempotency_key", claim_idempotency)
+    monkeypatch.setattr("aeo_api.routes.sources.complete_idempotency", lambda *_args, **_kwargs: None)
+
     monkeypatch.setattr(
         "aeo_api.routes.sources.get_settings",
         lambda: SimpleNamespace(
             github_token_value=None,
             github_public_repositories=["lethinh26/Clucky"],
+            github_repositories=["lethinh26/Clucky", "lethinh26/Llms-System"],
         ),
     )
     monkeypatch.setattr("aeo_api.routes.sources.ensure_configured_github_sources", configured_sources)
@@ -43,7 +50,10 @@ async def test_github_sync_queues_public_sources_without_private_token(monkeypat
     transport = httpx.ASGITransport(app=application)
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post("/v1/sources/github/sync")
+        response = await client.post(
+            "/v1/sources/github/sync",
+            headers={"Idempotency-Key": "test-sync-1"},
+        )
 
     assert response.status_code == 202
     assert response.json()["queued"] == 1

@@ -43,6 +43,24 @@ async def test_sync_scheduler_does_not_enqueue_when_a_retry_is_already_active() 
 
 
 @pytest.mark.asyncio
+async def test_sync_scheduler_recovers_a_running_source_without_an_active_job() -> None:
+    source = SimpleNamespace(
+        id=uuid4(),
+        tenant_id=uuid4(),
+        sync_status="running",
+        last_error_code="worker_lease_expired",
+    )
+    session = DummySession(sources=[source], scalar_results=[None])
+
+    queued = await queue_due_github_syncs(session)
+
+    assert queued == [source.id]
+    assert source.sync_status == "queued"
+    assert source.last_error_code is None
+    assert len(session.added) == 1
+
+
+@pytest.mark.asyncio
 async def test_sync_scheduler_enqueues_when_no_active_job_exists() -> None:
     source = SimpleNamespace(
         id=uuid4(), tenant_id=uuid4(), sync_status="idle", last_error_code=None

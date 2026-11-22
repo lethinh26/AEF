@@ -42,10 +42,12 @@ async def ensure_configured_github_sources(session: AsyncSession) -> list[Source
     settings = get_settings()
     organization = await ensure_local_organization(session)
     connections: list[SourceConnection] = []
+    configured_external_ids: set[str] = set()
 
     for configured_slug in settings.github_repositories:
         owner, repository = parse_repository_slug(configured_slug)
         external_id = f"{owner}/{repository}"
+        configured_external_ids.add(external_id)
         canonical_url = f"https://github.com/{external_id}"
         display_name = REPOSITORY_DISPLAY_NAMES.get(external_id, external_id)
         asset = await session.scalar(
@@ -69,6 +71,7 @@ async def ensure_configured_github_sources(session: AsyncSession) -> list[Source
         else:
             asset.name = display_name
             asset.metadata_json = {"provider": "github", "external_id": external_id}
+            asset.status = "active"
 
         connection = await session.scalar(
             select(SourceConnection).where(
@@ -97,7 +100,27 @@ async def ensure_configured_github_sources(session: AsyncSession) -> list[Source
         else:
             connection.sync_interval_seconds = settings.github_sync_interval_seconds
             connection.asset_id = asset.id
+            if (
+                connection.status == "paused"
+                and connection.last_error_code == "github_repository_not_configured"
+            ):
+                connection.status = "active"
+                connection.sync_status = "idle"
+                connection.last_error_code = None
         connections.append(connection)
+
+    existing_connections = await session.scalars(
+        select(SourceConnection).where(
+            SourceConnection.tenant_id == organization.id,
+            SourceConnection.provider == "github",
+        )
+    )
+    for connection in existing_connections:
+        if connection.external_id in configured_external_ids:
+            continue
+        connection.status = "paused"
+        connection.sync_status = "idle"
+        connection.last_error_code = "github_repository_not_configured"
 
     await session.flush()
     return connections

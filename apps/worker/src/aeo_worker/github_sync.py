@@ -6,6 +6,7 @@ from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import structlog
+from aeo_contracts.events import EventEnvelope
 from aeo_github import GitHubAPIError, GitHubClient, collect_repository_snapshot
 from aeo_platform.config import get_settings
 from aeo_platform.db import get_session_factory
@@ -17,6 +18,7 @@ from aeo_platform.models import (
     SourceCursor,
 )
 from aeo_platform.object_store import ArtifactStore
+from aeo_platform.outbox import append_event
 from aeo_platform.source_jobs import queue_github_opportunity_analysis
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -229,6 +231,30 @@ async def handle_github_sync(payload: dict[str, Any]) -> None:
                             "duplicates": duplicate_count,
                         },
                     )
+                )
+                await append_event(
+                    session,
+                    EventEnvelope(
+                        event_id=uuid5(NAMESPACE_URL, f"aeo:event:source-sync:{source_id}:{observed_at.isoformat()}"),
+                        event_type="observation.received",
+                        event_version=1,
+                        aggregate_type="source_sync",
+                        aggregate_id=uuid5(
+                            NAMESPACE_URL, f"aeo:source-sync:{source_id}:{observed_at.isoformat()}"
+                        ),
+                        aggregate_version=1,
+                        tenant_id=tenant_id,
+                        occurred_at=observed_at,
+                        observed_at=observed_at,
+                        actor="service:github-observer",
+                        correlation_id=source_id,
+                        payload={
+                            "repository": repository_slug,
+                            "fetched": len(records),
+                            "inserted": inserted_count,
+                            "duplicates": duplicate_count,
+                        },
+                    ),
                 )
                 await queue_github_opportunity_analysis(session, source_id)
     except Exception as error:

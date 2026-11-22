@@ -11,6 +11,7 @@ from aeo_platform.models import (
     Opportunity,
     OpportunityEvidence,
     Organization,
+    OutboxEvent,
     SourceConnection,
 )
 from aeo_worker.opportunity_analysis import handle_github_opportunity_analysis
@@ -185,6 +186,7 @@ async def test_analysis_expires_and_reopens_candidates_without_losing_triage_or_
                 await session.execute(delete(Finding).where(Finding.tenant_id == tenant_id))
                 await session.execute(delete(Observation).where(Observation.tenant_id == tenant_id))
                 await session.execute(delete(AuditEvent).where(AuditEvent.tenant_id == tenant_id))
+                await session.execute(delete(OutboxEvent).where(OutboxEvent.tenant_id == tenant_id))
                 await session.execute(
                     delete(SourceConnection).where(SourceConnection.tenant_id == tenant_id)
                 )

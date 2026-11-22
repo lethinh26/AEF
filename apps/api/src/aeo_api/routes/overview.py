@@ -27,6 +27,7 @@ async def get_overview(
     sources_synced = await session.scalar(
         select(func.count(SourceConnection.id)).where(
             SourceConnection.tenant_id == LOCAL_ORGANIZATION_ID,
+            SourceConnection.status == "active",
             SourceConnection.last_sync_completed_at.is_not(None),
         )
     )
@@ -41,6 +42,15 @@ async def get_overview(
             Opportunity.status == "proposed",
         )
     )
+    primary_source = await session.scalar(
+        select(SourceConnection)
+        .where(
+            SourceConnection.tenant_id == LOCAL_ORGANIZATION_ID,
+            SourceConnection.provider == "github",
+        )
+        .order_by(SourceConnection.external_id)
+        .limit(1)
+    )
     settings = get_settings()
     return {
         "sources_configured": sources_configured or 0,
@@ -50,5 +60,8 @@ async def get_overview(
         ),
         "observations": observation_count or 0,
         "opportunities_pending": opportunity_count or 0,
+        "primary_source_name": primary_source.external_id if primary_source else None,
+        "primary_source_status": primary_source.status if primary_source else None,
+        "primary_source_sync_status": primary_source.sync_status if primary_source else None,
         "mode": "read_only",
     }
