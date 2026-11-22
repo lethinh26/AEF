@@ -1,0 +1,23 @@
+[project]
+name = "aeo-platform-core"
+version = "0.1.0"
+description = "Shared platform primitives for AEO services."
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "aeo-domain-contracts",
+  "asyncpg>=0.30,<1",
+  "boto3>=1.35,<2",
+  "pydantic-settings>=2.7,<3",
+  "sqlalchemy[asyncio]>=2.0.36,<3",
+  "structlog>=24.4,<26",
+]
+
+[tool.uv.sources]
+aeo-domain-contracts = { workspace = true }
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aeo_platform"]
