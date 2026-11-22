@@ -1,11 +1,12 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12, <3.14"
 
 [manifest]
 members = [
     "aeo-api",
     "aeo-domain-contracts",
+    "aeo-github-connector",
     "aeo-platform-core",
     "aeo-worker",
 ]
@@ -50,6 +51,17 @@ dependencies = [
 requires-dist = [{ name = "pydantic", specifier = ">=2.10,<3" }]
 
 [[package]]
+name = "aeo-github-connector"
+version = "0.1.0"
+source = { editable = "packages/github-connector" }
+dependencies = [
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "httpx", specifier = ">=0.28,<1" }]
+
+[[package]]
 name = "aeo-platform-core"
 version = "0.1.0"
 source = { editable = "packages/platform-core" }
@@ -78,6 +90,7 @@ version = "0.1.0"
 source = { editable = "apps/worker" }
 dependencies = [
     { name = "aeo-domain-contracts" },
+    { name = "aeo-github-connector" },
     { name = "aeo-platform-core" },
     { name = "structlog" },
 ]
@@ -85,6 +98,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aeo-domain-contracts", editable = "packages/domain-contracts" },
+    { name = "aeo-github-connector", editable = "packages/github-connector" },
     { name = "aeo-platform-core", editable = "packages/platform-core" },
     { name = "structlog", specifier = ">=26.1.0,<27" },
 ]

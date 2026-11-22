@@ -14,6 +14,18 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def include_object(object_, name, type_, reflected, compare_to):
+    """Compare managed model tables across PostgreSQL schemas only.
+
+    The foundation migration intentionally contains domain tables that do not
+    yet have ORM models. Ignore those reflected-only tables while still
+    detecting a missing table that is present in the current model metadata.
+    """
+    if type_ == "table" and reflected and compare_to is None:
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=get_settings().database_url,
@@ -21,6 +33,8 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_schemas=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -31,6 +45,8 @@ def do_run_migrations(connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
+        include_schemas=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()

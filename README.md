@@ -6,7 +6,7 @@ The canonical architecture and product specifications live in [`architechture/do
 
 ## Current stage
 
-**Foundation bootstrap.** This stage establishes the modular-monolith backend, web shell, shared domain contracts, PostgreSQL, object storage, migrations and a durable worker foundation. The first product milestone is V0 Shadow Brain: read-only observation of a small number of repositories and CI sources.
+**V0 Shadow Brain — GitHub observer and first deterministic Opportunity Inbox.** The foundation includes a read-only GitHub connector, durable polling jobs, PostgreSQL observation metadata, S3-compatible evidence artifacts, Sources/Evidence views and a reproducible rule for repeated CI failures. The initial sources are `lethinh26/Clucky` and `lethinh26/Llms-System` (New-API). Clucky can sync anonymously; private New-API requires a dedicated fine-grained read-only token. See [`docs/runbooks/GITHUB_OBSERVER.md`](./docs/runbooks/GITHUB_OBSERVER.md).
 
 The initial checkout contained architecture documents only; no earlier V1 source tree was present. Implementation code is being created directly in this repository.
 
@@ -22,6 +22,7 @@ The initial checkout contained architecture documents only; no earlier V1 source
 - `examples`: synthetic fixtures and example contracts.
 - `docs/adr`: implementation architecture decisions.
 - `architechture/docs`: canonical architecture and product specifications.
+- `docs/runbooks/GITHUB_OBSERVER.md`: GitHub read-only token setup and observer operations.
 
 The initial deployment uses separate API and worker processes over a shared modular codebase. PostgreSQL is the canonical state store. A database-backed job queue and transactional outbox avoid introducing a broker before workload evidence requires one.
 
@@ -67,6 +68,8 @@ The initial deployment uses separate API and worker processes over a shared modu
    pnpm dev:web
    ```
 
+   Clucky is public and can sync anonymously. To enable private New-API observation, configure `AEO_GITHUB_TOKEN` in `.env` using a fine-grained token restricted to the two selected repositories and read-only Metadata, Contents, Issues, Pull requests and Actions permissions. Restart API and worker after changing it.
+
    - PostgreSQL: `127.0.0.1:55432`
    - S3 API: `http://127.0.0.1:9000`
    - API liveness: `http://127.0.0.1:8100/health/live`
@@ -103,7 +106,7 @@ Non-admin contributors need one approval from someone other than the latest push
 
 ## Safety boundaries
 
-- Initial source connectors are read-only. Production deployment is outside V0/V1 scope.
+- Initial source connectors are read-only. The GitHub connector fetches metadata only; it does not download source files, diffs, workflow logs or artifacts. Production deployment is outside V0/V1 scope.
 - Agent execution and repository writes are not enabled by this foundation bootstrap.
 - Secrets must never enter prompts, events, logs or committed files.
 - Future side-effecting tools must pass through policy enforcement and produce audit records.

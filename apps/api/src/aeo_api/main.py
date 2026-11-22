@@ -7,6 +7,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from aeo_api.routes.health import router as health_router
+from aeo_api.routes.opportunities import router as opportunities_router
+from aeo_api.routes.overview import router as overview_router
+from aeo_api.routes.sources import router as sources_router
 
 
 @asynccontextmanager
@@ -32,6 +35,9 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "If-Match"],
     )
     application.include_router(health_router)
+    application.include_router(overview_router)
+    application.include_router(sources_router)
+    application.include_router(opportunities_router)
     return application
 
 

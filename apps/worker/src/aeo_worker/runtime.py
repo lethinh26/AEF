@@ -8,12 +8,17 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from aeo_platform.bootstrap import ensure_configured_github_sources
 from aeo_platform.config import get_settings
 from aeo_platform.db import get_session_factory
 from aeo_platform.logging import configure_logging
 from aeo_platform.models import Job
+from aeo_platform.source_jobs import queue_due_github_syncs
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from aeo_worker.github_sync import handle_github_sync
+from aeo_worker.opportunity_analysis import handle_github_opportunity_analysis
 
 logger = structlog.get_logger(__name__)
 JobHandler = Callable[[dict[str, Any]], Awaitable[None]]
@@ -34,7 +39,11 @@ async def _handle_system_echo(payload: dict[str, Any]) -> None:
     logger.info("system_echo_job", payload_keys=sorted(payload.keys()))
 
 
-HANDLERS: dict[str, JobHandler] = {"system.echo": _handle_system_echo}
+HANDLERS: dict[str, JobHandler] = {
+    "system.echo": _handle_system_echo,
+    "github.sync": handle_github_sync,
+    "opportunity.analyze_github": handle_github_opportunity_analysis,
+}
 
 
 async def claim_job(
@@ -181,7 +190,27 @@ async def run_worker(
     worker_id = f"{socket.gethostname()}:{os.getpid()}"
     logger.info("worker_started", worker_id=worker_id, poll_interval=poll_interval)
 
+    async with factory() as session:
+        async with session.begin():
+            await ensure_configured_github_sources(session)
+    last_source_schedule = 0.0
+
     while True:
+        now_monotonic = asyncio.get_running_loop().time()
+        if now_monotonic - last_source_schedule >= 30:
+            settings = get_settings()
+            allowed_repositories = (
+                None if settings.github_token_value else settings.github_public_repositories
+            )
+            if settings.github_token_value or allowed_repositories:
+                async with factory() as session:
+                    async with session.begin():
+                        queued = await queue_due_github_syncs(
+                            session, allowed_repositories=allowed_repositories
+                        )
+                if queued:
+                    logger.info("github_sync_jobs_scheduled", count=len(queued))
+            last_source_schedule = now_monotonic
         did_work = await process_one(factory, worker_id)
         if not did_work:
             await asyncio.sleep(max(0.1, poll_interval))
