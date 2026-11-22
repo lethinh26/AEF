@@ -1,4 +1,4 @@
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 
 ENV PNPM_HOME="/pnpm" \
     PATH="/pnpm:$PATH"
@@ -29,7 +29,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN corepack prepare pnpm@11.24.0 --activate \
     && pnpm --filter @aeo/web build
 
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
