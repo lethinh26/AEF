@@ -4,10 +4,14 @@
 
 - Work on a short-lived feature branch; do not push directly to `main`.
 - Open a pull request targeting `main`.
-- Wait for `backend`, `frontend`, `container-build`, `dependency-review` and `codeql` to pass.
+- Keep the PR branch up to date with `main` and wait for all six required checks: `backend`, `frontend`, `container-build`, `dependency-review`, `codeql` and `GitGuardian Security Checks`.
 - `container-build` scans every final image with Trivy and blocks HIGH/CRITICAL vulnerabilities when a fix is available.
-- Obtain one approval from a reviewer other than the latest pusher and resolve all review conversations.
+- Resolve all review conversations before merge.
+- For non-admin contributors, obtain one approval from someone other than the latest pusher. Stale approvals are dismissed after new commits, and the latest push must be approved.
+- Repository Admins may bypass only this approval requirement when merging through a pull request. They cannot push directly to `main` or bypass the baseline PR, required checks, security gates or review-conversation resolution. The exemption is granted to the Repository Admin role, so it applies to every repository Admin (currently only `lethinh26`).
 - Merge with squash merge. GitHub deletes the source branch after merge.
+
+The policy is enforced by two active rulesets: `Protect main - PR, review and CI` (`27829813`) and `Owner review exemption - main` (`27830084`). The first ruleset has no bypass actors; the second grants `pull_request`-only bypass to the Repository Admin role for its approval rule.
 
 ## Image publication
 
