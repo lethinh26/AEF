@@ -6,7 +6,7 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
   "aeo-domain-contracts",
   "aeo-platform-core",
-  "structlog>=24.4,<26",
+  "structlog>=26.1.0,<27",
 ]
 
 [tool.uv.sources]
