@@ -25,7 +25,11 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /usr/local/lib/python3.13/site-packages/pip /usr/local/lib/python3.13/site-packages/pip-*.dist-info /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.13 \
+    && PYTHON_SITE_PACKAGES="$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+    && rm -rf "$PYTHON_SITE_PACKAGES/pip" "$PYTHON_SITE_PACKAGES"/pip-*.dist-info \
+        "$PYTHON_SITE_PACKAGES/setuptools" "$PYTHON_SITE_PACKAGES"/setuptools-*.dist-info \
+        "$PYTHON_SITE_PACKAGES/wheel" "$PYTHON_SITE_PACKAGES"/wheel-*.dist-info \
+    && rm -f /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.* \
     && groupadd --system --gid 10001 aeo \
     && useradd --system --uid 10001 --gid aeo --home-dir /app --no-create-home aeo
 
