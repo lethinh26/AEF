@@ -1,4 +1,4 @@
-FROM python:3.13-slim AS builder
+FROM python:3.15-slim AS builder
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy
@@ -13,7 +13,7 @@ COPY packages ./packages
 
 RUN uv sync --frozen --no-dev --package aeo-worker
 
-FROM python:3.13-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
