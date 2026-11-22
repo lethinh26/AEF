@@ -1,277 +1,81 @@
 import Link from "next/link";
-import { ApiStatus } from "@/components/api-status";
 
-type IconName = "grid" | "target" | "network" | "sparkles" | "rocket" | "shield" | "layers" | "arrow";
+type Overview = {
+  sources_configured: number;
+  sources_synced: number;
+  sources_waiting_for_credential: number;
+  observations: number;
+  opportunities_pending: number;
+};
+
+type IconName = "arrow" | "grid" | "network" | "sparkles" | "shield";
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
-  const shared = {
-    "aria-hidden": true as const,
-    fill: "none",
-    height: size,
-    stroke: "currentColor",
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    strokeWidth: 1.7,
-    viewBox: "0 0 24 24",
-    width: size,
-  };
-
+  const shared = { "aria-hidden": true as const, fill: "none", height: size, stroke: "currentColor", strokeLinecap: "round" as const, strokeLinejoin: "round" as const, strokeWidth: 1.7, viewBox: "0 0 24 24", width: size };
   switch (name) {
-    case "grid":
-      return <svg {...shared}><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></svg>;
-    case "target":
-      return <svg {...shared}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" /></svg>;
-    case "network":
-      return <svg {...shared}><circle cx="5" cy="7" r="2.2" /><circle cx="19" cy="6" r="2.2" /><circle cx="12" cy="18" r="2.2" /><path d="m7 8.2 3.6 7.5M17.1 7.8l-3.8 8M7.3 7.2l9.4-.8" /></svg>;
-    case "sparkles":
-      return <svg {...shared}><path d="m12 3 1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z" /><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15ZM5 2l.7 2.3L8 5l-2.3.7L5 8l-.7-2.3L2 5l2.3-.7L5 2Z" /></svg>;
-    case "rocket":
-      return <svg {...shared}><path d="M14.5 4.5c2.2-1.4 4.3-1.7 5-1 .7.7.4 2.8-1 5l-5.2 7.8-5.6-5.6 6.8-6.2Z" /><path d="m7.7 10.3-3.2.8-2 3.2 5.1.1M13.7 16.3l-.8 3.2-3.2 2-.1-5.1M8.1 15.9c-1.8.2-3.2 1.5-3.5 3.5 2-.3 3.3-1.7 3.5-3.5Z" /><circle cx="15.7" cy="8.3" r="1.4" /></svg>;
-    case "shield":
-      return <svg {...shared}><path d="M12 3 20 6v5.3c0 4.6-3.1 7.9-8 9.7-4.9-1.8-8-5.1-8-9.7V6l8-3Z" /><path d="m8.5 12 2.2 2.2 4.8-4.8" /></svg>;
-    case "layers":
-      return <svg {...shared}><path d="m12 3 9 4.7-9 4.8-9-4.8L12 3Z" /><path d="m3 12 9 4.8 9-4.8M3 16.3l9 4.7 9-4.7" /></svg>;
-    case "arrow":
-      return <svg {...shared}><path d="M7 17 17 7M7 7h10v10" /></svg>;
+    case "arrow": return <svg {...shared}><path d="M5 12h13M13 6l6 6-6 6" /></svg>;
+    case "grid": return <svg {...shared}><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.5" /><rect x="14" y="3.5" width="6.5" height="6.5" rx="1.5" /><rect x="3.5" y="14" width="6.5" height="6.5" rx="1.5" /><rect x="14" y="14" width="6.5" height="6.5" rx="1.5" /></svg>;
+    case "network": return <svg {...shared}><circle cx="5" cy="7" r="2" /><circle cx="19" cy="6" r="2" /><circle cx="12" cy="18" r="2" /><path d="m7 8.2 3.4 7.4M17.2 7.7l-3.7 8M7.2 7.1l9.6-.6" /></svg>;
+    case "sparkles": return <svg {...shared}><path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3Z" /><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" /></svg>;
+    case "shield": return <svg {...shared}><path d="M12 3 20 6v5.3c0 4.6-3.1 7.9-8 9.7-4.9-1.8-8-5.1-8-9.7V6l8-3Z" /><path d="m8.5 12 2.2 2.2 4.8-4.8" /></svg>;
   }
 }
 
-const navigation = [
-  {
-    label: "WORKSPACE",
-    items: [{ label: "Overview", icon: "grid" as const, active: true }],
-  },
-  {
-    label: "INTELLIGENCE",
-    items: [
-      { label: "Goals", icon: "target" as const },
-      { label: "Sources", icon: "network" as const },
-      { label: "Opportunities", icon: "sparkles" as const },
-    ],
-  },
-  {
-    label: "EXECUTION",
-    items: [
-      { label: "Missions", icon: "rocket" as const },
-      { label: "Evidence", icon: "shield" as const },
-    ],
-  },
-];
+async function loadOverview(): Promise<Overview | null> {
+  const apiBaseUrl = process.env.AEO_API_INTERNAL_URL ?? "http://127.0.0.1:8100";
+  try {
+    const response = await fetch(new URL("/v1/overview", apiBaseUrl), { cache: "no-store", signal: AbortSignal.timeout(3_000) });
+    if (!response.ok) return null;
+    return (await response.json()) as Overview;
+  } catch {
+    return null;
+  }
+}
 
-const principles = [
-  {
-    number: "01",
-    icon: "network" as const,
-    title: "Observe before acting",
-    description: "Read-only integrations build a trustworthy picture of your engineering world first.",
-    tone: "lilac",
-  },
-  {
-    number: "02",
-    icon: "layers" as const,
-    title: "Evidence over assumptions",
-    description: "Every finding should lead back to something concrete, traceable and verifiable.",
-    tone: "peach",
-  },
-  {
-    number: "03",
-    icon: "shield" as const,
-    title: "Guardrails at every step",
-    description: "Policy and independent verification stay in the loop before systems are changed.",
-    tone: "mint",
-  },
-];
+export default async function HomePage() {
+  const overview = await loadOverview();
+  const sourceCount = overview?.sources_configured ?? 0;
+  const syncedCount = overview?.sources_synced ?? 0;
+  const observationCount = overview?.observations ?? 0;
+  const opportunityCount = overview?.opportunities_pending ?? 0;
 
-export default function HomePage() {
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Link className="brand" href="/" aria-label="AEO home">
-          <span className="brand-symbol" aria-hidden="true">
-            <span className="brand-symbol-core">A</span>
-            <span className="brand-symbol-orbit" />
-          </span>
-          <span className="brand-copy">
-            <strong>AEO</strong>
-            <small>ENGINEERING OS</small>
-          </span>
-        </Link>
-
-        <div className="workspace-switcher">
-          <span className="workspace-avatar">A</span>
-          <span className="workspace-copy"><strong>My workspace</strong><small>Local workspace</small></span>
-          <span className="switcher-chevron">⌄</span>
+    <main className="overview-page">
+      <section className="overview-hero">
+        <div className="hero-copy">
+          <div className="eyebrow"><span className="eyebrow-dot" /> AEO / LIVE CONTROL PLANE</div>
+          <h1>Engineering clarity,<br /><em>at orbit.</em></h1>
+          <p>See what is happening across your engineering world, find the signals worth attention and keep every decision grounded in evidence.</p>
+          <div className="hero-actions"><Link className="button button-primary" href="/sources">Open sources <Icon name="arrow" size={15} /></Link><Link className="button button-ghost" href="/opportunities">View opportunities <Icon name="arrow" size={15} /></Link></div>
+          <div className="hero-caption"><span className="caption-line" /> Read-only observation is active <span className="caption-muted">·</span> No write access granted</div>
         </div>
+        <div className="hero-orbit" aria-hidden="true"><span className="hero-grid" /><span className="orbit-ring orbit-ring-one" /><span className="orbit-ring orbit-ring-two" /><span className="orbit-ring orbit-ring-three" /><span className="orbit-planet" /><span className="orbit-glow" /><i className="orbit-star orbit-star-one">✦</i><i className="orbit-star orbit-star-two">✧</i><i className="orbit-satellite" /></div>
+        <div className="hero-status"><span className="status-pulse" /> SHADOW MODE <small>READ ONLY</small></div>
+      </section>
 
-        <nav aria-label="Main navigation" className="navigation">
-          {navigation.map((group) => (
-            <div className="nav-group" key={group.label}>
-              <div className="nav-group-label">{group.label}</div>
-              <div className="nav-items">
-                {group.items.map((item) => (
-                  "active" in item && item.active ? (
-                    <Link aria-current="page" className="nav-item nav-item-active" href="/" key={item.label}>
-                      <span className="nav-icon"><Icon name={item.icon} /></span>
-                      <span>{item.label}</span>
-                      <span className="active-indicator" />
-                    </Link>
-                  ) : (
-                    <div aria-disabled="true" className="nav-item nav-item-disabled" key={item.label}>
-                      <span className="nav-icon"><Icon name={item.icon} /></span>
-                      <span>{item.label}</span>
-                      <span className="nav-soon">SOON</span>
-                    </div>
-                  )
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
+      <section className="metric-grid" aria-label="Workspace metrics">
+        <article className="metric-card metric-card-accent"><div className="metric-label"><span>CONNECTED SOURCES</span><Icon name="network" size={16} /></div><strong>{sourceCount}</strong><p>{syncedCount} synced <span>·</span> {overview?.sources_waiting_for_credential ?? 0} waiting for access</p></article>
+        <article className="metric-card"><div className="metric-label"><span>OBSERVATIONS</span><Icon name="grid" size={16} /></div><strong>{observationCount}</strong><p>Evidence records in the world model</p></article>
+        <article className="metric-card"><div className="metric-label"><span>OPEN OPPORTUNITIES</span><Icon name="sparkles" size={16} /></div><strong>{opportunityCount}</strong><p>Human-triage candidates waiting</p></article>
+        <article className="metric-card metric-card-status"><div className="metric-label"><span>OPERATING MODE</span><Icon name="shield" size={16} /></div><strong>R0</strong><p><span className="green-dot" /> Investigation only · guarded</p></article>
+      </section>
 
-        <div className="sidebar-spacer" />
-
-        <div className="sidebar-note">
-          <div className="sidebar-note-art" aria-hidden="true">
-            <span className="note-orbit note-orbit-one" />
-            <span className="note-orbit note-orbit-two" />
-            <span className="note-planet" />
+      <section className="dashboard-grid">
+        <article className="panel signal-panel">
+          <div className="panel-heading"><div><span className="section-kicker">WORLD MODEL / SIGNALS</span><h2>What AEO sees now</h2></div><Link className="panel-link" href="/evidence">Open evidence <Icon name="arrow" size={14} /></Link></div>
+          <div className="signal-list">
+            <div className="signal-row"><span className="signal-icon signal-icon-purple"><Icon name="network" size={16} /></span><div><strong>Clucky</strong><small>GitHub repository · public source</small></div><span className="signal-state"><i /> SYNCED</span></div>
+            <div className="signal-row"><span className="signal-icon signal-icon-blue"><Icon name="grid" size={16} /></span><div><strong>{observationCount || "—"} observations indexed</strong><small>Commits, pull requests, issues and workflow runs</small></div><span className="signal-state"><i /> LIVE</span></div>
+            <div className="signal-row"><span className="signal-icon signal-icon-amber"><Icon name="sparkles" size={16} /></span><div><strong>{opportunityCount || "No"} opportunity{opportunityCount === 1 ? "" : "ies"} pending</strong><small>Repeated CI failure signal · evidence attached</small></div><span className="signal-state signal-state-warm"><i /> REVIEW</span></div>
           </div>
-          <span className="sidebar-note-label">A NEW WAY TO BUILD</span>
-          <strong>Engineering, in a new orbit.</strong>
-          <span className="sidebar-note-caption">Your control plane is taking shape.</span>
-        </div>
+        </article>
 
-        <div className="sidebar-footer">
-          <div className="environment-indicator"><span /> LOCAL ENVIRONMENT</div>
-          <span className="version-label">v0.1.0</span>
-        </div>
-      </aside>
+        <article className="panel model-panel"><div className="panel-heading"><div><span className="section-kicker">OPERATING PRINCIPLE</span><h2>Trust the trail.</h2></div><span className="panel-index">01 / 03</span></div><p>AEO does not jump from an alert to an action. It preserves the source event, groups related signals and makes uncertainty visible before a human decides what happens next.</p><div className="principle-trail"><span className="trail-node trail-node-done"><Icon name="network" size={14} /></span><i /><span className="trail-node trail-node-done"><Icon name="grid" size={14} /></span><i /><span className="trail-node"><Icon name="sparkles" size={14} /></span><i /><span className="trail-node"><Icon name="shield" size={14} /></span></div><div className="trail-labels"><span>Observe</span><span>Evidence</span><span>Decide</span><span>Verify</span></div></article>
+      </section>
 
-      <main className="main-content">
-        <header className="topbar">
-          <div className="breadcrumb"><span>WORKSPACE</span><b>/</b> Overview</div>
-          <div className="topbar-actions">
-            <div className="topbar-environment"><span /> Local environment</div>
-            <div className="topbar-divider" />
-            <div className="topbar-mode"><Icon name="shield" size={13} /> SHADOW MODE</div>
-          </div>
-        </header>
+      <section className="lower-grid"><Link className="launch-card" href="/sources"><span className="launch-kicker">START HERE</span><strong>Explore your<br /><em>engineering world.</em></strong><span className="launch-link">View connected sources <Icon name="arrow" size={14} /></span><span className="launch-orbit launch-orbit-a" /><span className="launch-orbit launch-orbit-b" /><span className="launch-planet" /></Link><article className="quote-card"><span className="quote-mark">“</span><p>Autonomy is earned through visibility, evidence and trust.</p><span className="quote-rule" /><small>AEO / FOUNDATION PRINCIPLE</small></article></section>
 
-        <div className="page-content">
-          <section className="hero-card">
-            <div className="hero-copy">
-              <div className="hero-eyebrow"><span className="eyebrow-sparkle"><Icon name="sparkles" size={13} /></span> YOUR ENGINEERING CONTROL PLANE</div>
-              <h1>Make room for<br /><span>what&apos;s next.</span></h1>
-              <p>One calm place to understand your systems, discover opportunities and move engineering forward.</p>
-              <div className="hero-meta">
-                <span className="hero-phase"><i /> FOUNDATION PHASE</span>
-                <span className="hero-meta-divider" />
-                <span className="hero-meta-copy">AEO is getting ready for lift-off</span>
-              </div>
-            </div>
-
-            <div className="hero-visual" aria-hidden="true">
-              <div className="visual-stars stars-one" />
-              <div className="visual-stars stars-two" />
-              <div className="orbit-scene">
-                <span className="orbit orbit-wide" />
-                <span className="orbit orbit-tall" />
-                <span className="orbit orbit-tilted" />
-                <span className="planet-halo" />
-                <span className="planet-shadow" />
-                <span className="planet-core" />
-                <span className="planet-highlight" />
-                <span className="planet-ring" />
-                <span className="satellite satellite-one"><i /></span>
-                <span className="satellite satellite-two"><i /></span>
-                <span className="visual-cross cross-one">✳</span>
-                <span className="visual-cross cross-two">✦</span>
-              </div>
-              <div className="floating-card floating-source">
-                <span className="floating-icon floating-icon-purple"><Icon name="network" size={16} /></span>
-                <span><strong>Sources</strong><small>Connect your world</small></span>
-                <Icon name="arrow" size={14} />
-              </div>
-              <div className="floating-card floating-mode">
-                <span className="floating-live-dot" />
-                <span><strong>Shadow mode</strong><small>Read-only by design</small></span>
-              </div>
-            </div>
-          </section>
-
-          <section className="overview-stats" aria-label="Workspace status">
-            <article className="stat-card stat-phase">
-              <div className="stat-topline"><span className="stat-label">CURRENT PHASE</span><span className="stat-icon stat-icon-lilac"><Icon name="layers" size={17} /></span></div>
-              <div className="stat-main"><strong>01</strong><span>/ 07</span></div>
-              <div className="stat-bottom"><span>Platform foundation</span><span className="stat-progress">14%</span></div>
-              <div className="mini-progress"><i /></div>
-            </article>
-
-            <article className="stat-card stat-sources">
-              <div className="stat-topline"><span className="stat-label">CONNECTED SOURCES</span><span className="stat-icon stat-icon-peach"><Icon name="network" size={17} /></span></div>
-              <div className="stat-main"><strong>0</strong><span>connected</span></div>
-              <div className="stat-bottom"><span>Repositories &amp; CI pipelines</span></div>
-              <div className="stat-footnote"><span className="empty-source-dot" /> Waiting for your first connection</div>
-            </article>
-
-            <article className="stat-card stat-api">
-              <div className="stat-topline"><span className="stat-label">CONTROL PLANE API</span><span className="stat-icon stat-icon-mint"><Icon name="shield" size={17} /></span></div>
-              <div className="api-stat-content"><ApiStatus /></div>
-              <div className="stat-bottom"><span>Health checks run automatically</span></div>
-              <div className="stat-footnote"><span className="api-footnote-dot" /> Backend connection monitor</div>
-            </article>
-          </section>
-
-          <section className="mission-section" aria-labelledby="mission-title">
-            <div className="section-heading">
-              <div><span className="section-kicker">THE JOURNEY</span><h2 id="mission-title">Your first mission</h2></div>
-              <span className="section-counter">01 <i>/</i> 07 PHASES</span>
-            </div>
-
-            <div className="mission-grid">
-              <article className="mission-card">
-                <div className="mission-card-top"><span className="mission-badge"><i /> NOW BUILDING</span><span className="mission-card-index">01 — FOUNDATION</span></div>
-                <h3>Lay the groundwork.</h3>
-                <p>The essentials are in place. Shared contracts, persistent state and background processing give AEO a solid launchpad.</p>
-                <div className="journey-track">
-                  <div className="journey-step journey-step-active"><span className="journey-node"><Icon name="layers" size={14} /></span><div><strong>Platform foundation</strong><small>Core infrastructure is ready</small></div><span className="journey-state">CURRENT</span></div>
-                  <div className="journey-connector" />
-                  <div className="journey-step"><span className="journey-node"><Icon name="network" size={14} /></span><div><strong>Shadow Brain</strong><small>Connect repositories and CI signals</small></div><span className="journey-state">NEXT UP</span></div>
-                  <div className="journey-connector" />
-                  <div className="journey-step journey-step-muted"><span className="journey-node"><Icon name="sparkles" size={14} /></span><div><strong>Opportunity Engine</strong><small>Turn evidence into useful priorities</small></div><span className="journey-state">UPCOMING</span></div>
-                </div>
-              </article>
-
-              <aside className="next-card">
-                <div className="next-card-art" aria-hidden="true"><span className="next-orbit next-orbit-a" /><span className="next-orbit next-orbit-b" /><span className="next-planet" /><span className="next-star next-star-a">✦</span><span className="next-star next-star-b">✳</span></div>
-                <span className="next-card-kicker">ON THE HORIZON</span>
-                <h3>Next stop:<br /><span>Shadow Brain.</span></h3>
-                <p>Give AEO a window into your repositories. The first step toward an engineering organization that can see the bigger picture.</p>
-                <div className="next-card-footer"><span>PHASE 02</span><span className="next-card-line" /><span>READ-ONLY</span></div>
-              </aside>
-            </div>
-          </section>
-
-          <section className="principles-section" aria-labelledby="principles-title">
-            <div className="section-heading principles-heading">
-              <div><span className="section-kicker">BUILT DIFFERENTLY</span><h2 id="principles-title">A thoughtful way to engineer.</h2></div>
-              <p>Autonomy is earned through visibility, evidence and trust.</p>
-            </div>
-            <div className="principle-grid">
-              {principles.map((principle) => (
-                <article className="principle-card" key={principle.number}>
-                  <div className={`principle-icon principle-icon-${principle.tone}`}><Icon name={principle.icon} size={19} /></div>
-                  <span className="principle-number">{principle.number}</span>
-                  <h3>{principle.title}</h3>
-                  <p>{principle.description}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <footer className="page-footer"><span><b>AEO</b> · AUTONOMOUS ENGINEERING ORGANIZATION</span><span>MADE FOR THE NEXT ERA OF ENGINEERING <i>✳</i></span></footer>
-        </div>
-      </main>
-    </div>
+      <footer className="page-footer"><span><b>AEO</b> · AUTONOMOUS ENGINEERING ORGANIZATION</span><span>LOCAL WORKSPACE <i>✦</i></span></footer>
+    </main>
   );
 }

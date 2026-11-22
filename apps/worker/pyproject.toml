@@ -5,12 +5,14 @@ description = "Durable background worker for AEO."
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "aeo-domain-contracts",
+  "aeo-github-connector",
   "aeo-platform-core",
   "structlog>=26.1.0,<27",
 ]
 
 [tool.uv.sources]
 aeo-domain-contracts = { workspace = true }
+aeo-github-connector = { workspace = true }
 aeo-platform-core = { workspace = true }
 
 [build-system]

@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +20,17 @@ class Settings(BaseSettings):
     s3_access_key: str = "aeo-local"
     s3_secret_key: str = "aeo_local_object_store_change_me"
     s3_bucket: str = "aeo-artifacts"
+    github_token: SecretStr | None = None
+    github_repositories: list[str] = ["lethinh26/Clucky", "lethinh26/Llms-System"]
+    github_public_repositories: list[str] = ["lethinh26/Clucky"]
+    github_sync_interval_seconds: int = Field(default=900, ge=60, le=86_400)
+
+    @property
+    def github_token_value(self) -> str | None:
+        if self.github_token is None:
+            return None
+        value = self.github_token.get_secret_value().strip()
+        return value or None
 
 
 @lru_cache

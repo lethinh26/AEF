@@ -1,0 +1,13 @@
+[project]
+name = "aeo-github-connector"
+version = "0.1.0"
+description = "Read-only GitHub REST API connector for AEO ingestion."
+requires-python = ">=3.12,<3.14"
+dependencies = ["httpx>=0.28,<1"]
+
+[build-system]
+requires = ["hatchling>=1.33.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aeo_github"]
