@@ -11,10 +11,12 @@ The AEO architecture requires protected branches, independently reviewed changes
 
 ## Decision
 
-1. All changes to `main` must arrive through a pull request.
-2. A pull request needs one approval from someone other than its latest pusher. Stale approvals are dismissed after new commits, and review conversations must be resolved.
-3. Backend, frontend, container-build, dependency-review and CodeQL checks are required before merge. The PR branch must be up to date with `main`.
-4. Force pushes, branch deletion and ruleset bypass are disabled for `main`, including for administrators.
+1. All changes to `main` must arrive through a pull request; direct pushes are blocked.
+2. Two rulesets are layered on `main` to separate baseline branch protection from the review exception:
+   - `Protect main - PR, review and CI` (ruleset `27829813`) requires a pull request, an up-to-date branch, resolved review conversations and all required status checks. It has no bypass actors. It also blocks force pushes, branch deletion and non-fast-forward updates, and requires linear history.
+   - `Owner review exemption - main` (ruleset `27830084`) requires one approval from someone other than the latest pusher, dismisses stale approvals after new commits and requires approval of the latest push. Its only bypass actor is the `RepositoryRole` Admin role, with `pull_request` bypass mode.
+3. The Admin bypass applies only to the approval ruleset and only while merging a pull request. It does not bypass the baseline ruleset, permit direct pushes, or waive required CI/security checks or review-conversation resolution. Non-admin contributors must obtain the independent approval described above.
+4. The six required status checks are `backend`, `frontend`, `container-build`, `dependency-review`, `codeql` and `GitGuardian Security Checks`. The PR branch must be up to date with `main` before merge.
 5. Squash merge is the only enabled merge strategy; merged feature branches are deleted automatically.
 6. GitHub Actions use read-only permissions by default and third-party actions are pinned to full commit SHAs.
 7. After merge, CI builds API, worker and web images and publishes immutable commit tags plus a moving `main` tag to GHCR. BuildKit provenance and SBOM attestations are enabled.
@@ -22,7 +24,8 @@ The AEO architecture requires protected branches, independently reviewed changes
 
 ## Consequences
 
-- A second collaborator must review PRs authored by the repository owner. The repository currently has a second write-capable collaborator, so this policy is operable without an administrator bypass.
+- Non-admin collaborators must obtain an independent approval before merge. Repository Admins can merge their PRs without waiting for approval, but remain subject to the baseline PR and CI/security requirements.
+- The approval exemption is role-based, not bound to a specific username. Any account granted Repository Admin will receive the same exemption; at the time of this decision, `lethinh26` is the only Repository Admin.
 - A merge is blocked when any required check fails or is missing.
 - Container images become traceable to the source commit. GHCR package visibility and staging pull credentials must be configured before remote deployment.
 - The application can run as API, worker and web containers locally using `compose.application.yaml` layered over `compose.yaml`.

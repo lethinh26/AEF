@@ -97,7 +97,9 @@ The application overlay binds the API and web ports to loopback only. The migrat
 
 ## GitHub delivery pipeline
 
-All changes to `main` go through a reviewed pull request. Backend, frontend, container-build (including Trivy HIGH/CRITICAL image scanning), dependency-review and CodeQL checks are required. Dependabot monitors Python, pnpm, Docker base images and GitHub Actions. After merge, GitHub Actions publishes API, worker and web images to GHCR with commit-specific tags, provenance and SBOM attestations. Staging deployment is not enabled until a real staging host and credentials are provisioned; production deployment is outside the current V0/V1 scope. See [`docs/runbooks/release-pipeline.md`](./docs/runbooks/release-pipeline.md).
+All changes to `main` go through a pull request; direct pushes are blocked. The baseline main ruleset requires the PR branch to be up to date, all review conversations resolved, and six checks to pass: `backend`, `frontend`, `container-build` (including Trivy HIGH/CRITICAL image scanning), `dependency-review`, `codeql` and `GitGuardian Security Checks`.
+
+Non-admin contributors need one approval from someone other than the latest pusher; stale approvals are dismissed and the latest push must be approved. Repository Admins may bypass this approval requirement only when merging through a pull request. This exemption does not allow direct pushes or bypass the baseline PR, CI/security or conversation-resolution requirements. The exemption is role-based and therefore applies to every Repository Admin; `lethinh26` is currently the repository's only Admin. Dependabot monitors Python, pnpm, Docker base images and GitHub Actions. After merge, GitHub Actions publishes API, worker and web images to GHCR with commit-specific tags, provenance and SBOM attestations. Staging deployment is not enabled until a real staging host and credentials are provisioned; production deployment is outside the current V0/V1 scope. See [`docs/runbooks/release-pipeline.md`](./docs/runbooks/release-pipeline.md).
 
 ## Safety boundaries
 
