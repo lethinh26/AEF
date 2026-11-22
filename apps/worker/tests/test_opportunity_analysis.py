@@ -16,6 +16,7 @@ def make_observation(asset_id, workflow, branch, index):
         id=uuid4(),
         asset_id=asset_id,
         occurred_at=datetime.now(UTC) - timedelta(hours=index),
+        source_event_id=f"run:{index}",
         summary=f"Workflow {workflow} finished with failure on {branch}",
     )
 
@@ -38,12 +39,54 @@ def test_ci_failure_clusters_require_repeated_signal_and_keep_branch_evidence() 
     assert clusters[0].branches == frozenset({"main", "release"})
 
 
+def test_ci_failure_clusters_deduplicate_replayed_workflow_runs() -> None:
+    asset_id = uuid4()
+    run = SimpleNamespace(
+        id=uuid4(),
+        asset_id=asset_id,
+        occurred_at=datetime.now(UTC) - timedelta(hours=1),
+        source_event_id="workflow_run:123:1",
+        summary="Workflow Backend CI finished with failure on main",
+    )
+    replay = SimpleNamespace(
+        id=uuid4(),
+        asset_id=asset_id,
+        occurred_at=datetime.now(UTC) - timedelta(minutes=30),
+        source_event_id="workflow_run:123:1",
+        summary="Workflow Backend CI finished with failure on main",
+    )
+    distinct_runs = [
+        run,
+        replay,
+        *(
+            make_observation(asset_id, "Backend CI", "main", index)
+            for index in (2, 3)
+        ),
+    ]
+
+    clusters = build_ci_failure_clusters(distinct_runs, minimum_failures=3)
+
+    assert len(clusters) == 1
+    assert len(clusters[0].observations) == 3
+    assert {item.source_event_id for item in clusters[0].observations} == {
+        "workflow_run:123:1",
+        "run:2",
+        "run:3",
+    }
+
+
 def test_ci_failure_cluster_ignores_non_failure_or_unparseable_observations() -> None:
     asset_id = uuid4()
     observations = [
-        SimpleNamespace(asset_id=asset_id, summary="Workflow Backend CI finished with success on main"),
+        SimpleNamespace(
+            asset_id=asset_id,
+            summary="Workflow Backend CI finished with success on main",
+        ),
         SimpleNamespace(asset_id=asset_id, summary="CI failed but summary has no canonical shape"),
-        SimpleNamespace(asset_id=None, summary="Workflow Backend CI finished with failure on main"),
+        SimpleNamespace(
+            asset_id=None,
+            summary="Workflow Backend CI finished with failure on main",
+        ),
     ]
 
     assert build_ci_failure_clusters(observations) == []

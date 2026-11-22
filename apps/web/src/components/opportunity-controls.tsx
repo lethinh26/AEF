@@ -5,12 +5,16 @@ import { useState } from "react";
 export function RecomputeOpportunitiesButton() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   async function recompute() {
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch("/api/opportunities/recompute", { method: "POST" });
+      const response = await fetch("/api/opportunities/recompute", {
+        method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
+      });
       const body = await response.json();
       if (!response.ok) throw new Error("Could not queue analysis.");
       setMessage(
@@ -43,6 +47,7 @@ export function OpportunityTriageControls({
   const [reason, setReason] = useState("Reviewed in the Control Center");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState("");
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   async function triage(action: "accept" | "defer" | "reject") {
     setBusy(true);
@@ -50,7 +55,7 @@ export function OpportunityTriageControls({
     try {
       const response = await fetch(`/api/opportunities/${id}/triage`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
         body: JSON.stringify({ action, reason }),
       });
       const body = await response.json();

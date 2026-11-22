@@ -57,4 +57,7 @@ Candidates that fall below the threshold as observations leave the seven-day win
 - `github_rate_limited`: wait for the GitHub rate-limit reset; the durable worker retries.
 - `artifact_persistence_failed`: check PostgreSQL and the S3-compatible object store health.
 
+- `github_repository_not_configured`: source đã bị loại khỏi `AEO_GITHUB_REPOSITORIES`; bootstrap tự pause source và scheduler không enqueue lại cho tới khi repository được cấu hình lại.
+- `worker_lease_expired`: nếu GitHub sync job mất lease, worker đưa source về `failed` và đặt lịch retry để source không bị kẹt ở `running`.
+
 Never solve an access problem by granting write permissions. If a permission is missing, add only the corresponding read-only permission.

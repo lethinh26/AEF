@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import structlog
+from aeo_contracts.events import EventEnvelope
 from aeo_platform.db import get_session_factory
 from aeo_platform.models import (
     AuditEvent,
@@ -15,6 +16,7 @@ from aeo_platform.models import (
     OpportunityEvidence,
     SourceConnection,
 )
+from aeo_platform.outbox import append_event
 from sqlalchemy import case, select
 from sqlalchemy.dialects.postgresql import insert
 
@@ -47,6 +49,7 @@ def build_ci_failure_clusters(
     window_end: datetime | None = None,
 ) -> list[CIFailureCluster]:
     grouped: dict[tuple[UUID, str], list[tuple[Observation, str]]] = defaultdict(list)
+    seen_events: set[tuple[UUID, str, str]] = set()
     for observation in observations:
         if observation.asset_id is None or not observation.summary:
             continue
@@ -62,6 +65,11 @@ def build_ci_failure_clusters(
             continue
         workflow_name = prefix.removeprefix("Workflow ").strip()
         if workflow_name:
+            event_key = getattr(observation, "source_event_id", None) or str(observation.id)
+            dedup_key = (observation.asset_id, workflow_name, event_key)
+            if dedup_key in seen_events:
+                continue
+            seen_events.add(dedup_key)
             grouped[(observation.asset_id, workflow_name)].append((observation, branch.strip()))
 
     clusters: list[CIFailureCluster] = []
@@ -228,6 +236,33 @@ async def handle_github_opportunity_analysis(payload: dict) -> None:
                         index_elements=["id"]
                     )
                 )
+                await append_event(
+                    session,
+                    EventEnvelope(
+                        event_id=uuid5(
+                            NAMESPACE_URL,
+                            f"aeo:event:opportunity-proposed:{opportunity_id}:{cluster.last_seen_at.isoformat()}",
+                        ),
+                        event_type="opportunity.proposed",
+                        event_version=1,
+                        aggregate_type="opportunity",
+                        aggregate_id=opportunity_id,
+                        aggregate_version=1,
+                        tenant_id=tenant_id,
+                        occurred_at=cluster.last_seen_at,
+                        observed_at=now,
+                        actor="service:opportunity-engine",
+                        correlation_id=opportunity_id,
+                        payload={
+                            "finding_id": str(finding_id),
+                            "repository": repository,
+                            "finding_type": "recurring_ci_failure",
+                            "workflow": cluster.workflow_name,
+                            "failed_runs": count,
+                            "branches": branch_count,
+                        },
+                    ),
+                )
                 session.add(
                     AuditEvent(
                         id=uuid4(),
@@ -280,6 +315,27 @@ async def handle_github_opportunity_analysis(payload: dict) -> None:
                         continue
                     opportunity.status = "expired"
                     opportunity.updated_at = now
+                    await append_event(
+                        session,
+                        EventEnvelope(
+                            event_id=uuid4(),
+                            event_type="opportunity.expired",
+                            event_version=1,
+                            aggregate_type="opportunity",
+                            aggregate_id=opportunity.id,
+                            aggregate_version=1,
+                            tenant_id=tenant_id,
+                            occurred_at=now,
+                            observed_at=now,
+                            actor="service:opportunity-engine",
+                            correlation_id=opportunity.id,
+                            payload={
+                                "finding_id": str(finding.id),
+                                "repository": repository,
+                                "reason": "failure_threshold_no_longer_met_in_rolling_window",
+                            },
+                        ),
+                    )
                     session.add(
                         AuditEvent(
                             id=uuid4(),

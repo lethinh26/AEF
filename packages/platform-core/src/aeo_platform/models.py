@@ -336,6 +336,27 @@ class InboxDedup(Base):
     )
 
 
+class IdempotencyKey(Base):
+    __tablename__ = "idempotency_keys"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "key", name="uq_idempotency_keys_tenant_key"),
+        Index("ix_idempotency_keys_tenant_created", "tenant_id", text("created_at DESC")),
+        {"schema": "infra"},
+    )
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("identity.organizations.id"), nullable=False
+    )
+    key: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_status: Mapped[int | None] = mapped_column(Integer)
+    response_body: Mapped[dict[str, Any] | None] = mapped_column(JSON_DOCUMENT)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class ArtifactMetadata(Base):
     __tablename__ = "artifact_metadata"
     __table_args__ = (

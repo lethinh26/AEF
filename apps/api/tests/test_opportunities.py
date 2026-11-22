@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from aeo_api.routes import opportunities as opportunities_routes
 from aeo_api.routes.opportunities import (
     OpportunityTriageRequest,
     recompute_opportunities,
@@ -10,6 +11,23 @@ from aeo_api.routes.opportunities import (
 )
 from fastapi import HTTPException
 from pydantic import ValidationError
+
+
+class DummyIdempotencyRecord:
+    response_body = None
+
+
+@pytest.fixture(autouse=True)
+def stub_idempotency(monkeypatch):
+    async def claim(*_args, **_kwargs):
+        return DummyIdempotencyRecord(), None
+
+    monkeypatch.setattr(opportunities_routes, "claim_idempotency_key", claim)
+    monkeypatch.setattr(opportunities_routes, "complete_idempotency", lambda *_args, **_kwargs: None)
+    async def append_event(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(opportunities_routes, "append_event", append_event)
 
 
 class DummySession:
@@ -58,6 +76,7 @@ async def test_triage_updates_proposed_opportunity_and_writes_audit() -> None:
         opportunity_id,
         OpportunityTriageRequest(action="accept", reason="  Reviewed evidence  "),
         session,
+        "test-key",
     )
 
     assert result == {"id": str(opportunity_id), "status": "accepted"}
@@ -76,6 +95,7 @@ async def test_triage_rejects_a_second_transition() -> None:
             uuid4(),
             OpportunityTriageRequest(action="reject", reason="No longer relevant"),
             session,
+            "test-key",
         )
 
     assert error.value.status_code == 409
@@ -89,6 +109,7 @@ async def test_triage_returns_not_found_for_unknown_opportunity() -> None:
             uuid4(),
             OpportunityTriageRequest(action="defer", reason="Need more evidence"),
             DummySession(None),
+            "test-key",
         )
 
     assert error.value.status_code == 404
@@ -117,7 +138,7 @@ async def test_recompute_skips_sources_without_observations() -> None:
         [uuid4(), source_with_data, None, None],
     )
 
-    result = await recompute_opportunities(session)
+    result = await recompute_opportunities(session, "test-key")
 
     assert result["queued"] == 1
     assert result["skipped_active"] == 0
@@ -132,7 +153,7 @@ async def test_recompute_skips_sources_with_an_active_analysis_job() -> None:
     active_job = SimpleNamespace(status="retrying")
     session = DummyRecomputeSession([source], [uuid4(), source, active_job])
 
-    result = await recompute_opportunities(session)
+    result = await recompute_opportunities(session, "test-key")
 
     assert result["queued"] == 0
     assert result["skipped_active"] == 1

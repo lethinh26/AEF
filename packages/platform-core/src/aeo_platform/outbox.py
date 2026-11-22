@@ -10,8 +10,9 @@ from aeo_platform.models import InboxDedup, OutboxEvent
 async def append_event(session: AsyncSession, event: EventEnvelope) -> None:
     """Append an event in the caller's transaction with the related state change."""
 
-    session.add(
-        OutboxEvent(
+    statement = (
+        insert(OutboxEvent)
+        .values(
             id=event.event_id,
             event_type=event.event_type,
             event_version=event.event_version,
@@ -29,7 +30,15 @@ async def append_event(session: AsyncSession, event: EventEnvelope) -> None:
             payload_ref=event.payload_ref,
             payload_digest=event.payload_digest,
         )
+        .on_conflict_do_nothing(
+            index_elements=[
+                OutboxEvent.aggregate_type,
+                OutboxEvent.aggregate_id,
+                OutboxEvent.aggregate_version,
+            ]
+        )
     )
+    await session.execute(statement)
 
 
 async def mark_event_processed(

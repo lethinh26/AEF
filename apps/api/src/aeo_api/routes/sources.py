@@ -5,10 +5,16 @@ from uuid import UUID
 from aeo_platform.bootstrap import LOCAL_ORGANIZATION_ID, ensure_configured_github_sources
 from aeo_platform.config import get_settings
 from aeo_platform.db import get_session
+from aeo_platform.idempotency import (
+    IdempotencyConflict,
+    claim_idempotency_key,
+    complete_idempotency,
+    request_hash,
+)
 from aeo_platform.models import Asset, Observation, SourceConnection
 from aeo_platform.object_store import ArtifactStore
 from aeo_platform.source_jobs import queue_due_github_syncs
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -73,12 +79,28 @@ async def list_sources(session: Annotated[AsyncSession, Depends(get_session)]) -
 @router.post("/sources/github/sync", status_code=status.HTTP_202_ACCEPTED)
 async def sync_github_sources(
     session: Annotated[AsyncSession, Depends(get_session)],
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ) -> dict[str, Any]:
+    if not idempotency_key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
     settings = get_settings()
     async with session.begin():
+        try:
+            record, previous_response = await claim_idempotency_key(
+                session,
+                tenant_id=LOCAL_ORGANIZATION_ID,
+                key=idempotency_key,
+                request_digest=request_hash("sources.github.sync"),
+            )
+        except (ValueError, IdempotencyConflict) as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        if previous_response is not None:
+            return previous_response
         connections = await ensure_configured_github_sources(session)
         allowed_repositories = (
-            None if settings.github_token_value else settings.github_public_repositories
+            settings.github_repositories
+            if settings.github_token_value
+            else settings.github_public_repositories
         )
         queued = await queue_due_github_syncs(
             session, force=True, allowed_repositories=allowed_repositories
@@ -89,11 +111,13 @@ async def sync_github_sources(
             if not settings.github_token_value
             and source.external_id not in settings.github_public_repositories
         ]
-    return {
-        "queued": len(queued),
-        "source_ids": [str(source_id) for source_id in queued],
-        "requires_credential": requires_credential,
-    }
+        response = {
+            "queued": len(queued),
+            "source_ids": [str(source_id) for source_id in queued],
+            "requires_credential": requires_credential,
+        }
+        complete_idempotency(record, response_status=status.HTTP_202_ACCEPTED, response_body=response)
+    return response
 
 
 @router.get("/observations")

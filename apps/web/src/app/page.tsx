@@ -6,6 +6,9 @@ type Overview = {
   sources_waiting_for_credential: number;
   observations: number;
   opportunities_pending: number;
+  primary_source_name?: string | null;
+  primary_source_status?: string | null;
+  primary_source_sync_status?: string | null;
 };
 
 type IconName = "arrow" | "grid" | "network" | "sparkles" | "shield";
@@ -38,6 +41,10 @@ export default async function HomePage() {
   const syncedCount = overview?.sources_synced ?? 0;
   const observationCount = overview?.observations ?? 0;
   const opportunityCount = overview?.opportunities_pending ?? 0;
+  const primarySourceName = overview?.primary_source_name ?? "No source configured";
+  const primarySourceState = overview?.primary_source_status === "active" && overview.primary_source_sync_status === "idle"
+    ? "SYNCED"
+    : (overview?.primary_source_sync_status ?? "WAITING").toUpperCase();
 
   return (
     <main className="overview-page">
@@ -64,7 +71,7 @@ export default async function HomePage() {
         <article className="panel signal-panel">
           <div className="panel-heading"><div><span className="section-kicker">WORLD MODEL / SIGNALS</span><h2>What AEO sees now</h2></div><Link className="panel-link" href="/evidence">Open evidence <Icon name="arrow" size={14} /></Link></div>
           <div className="signal-list">
-            <div className="signal-row"><span className="signal-icon signal-icon-purple"><Icon name="network" size={16} /></span><div><strong>Clucky</strong><small>GitHub repository · public source</small></div><span className="signal-state"><i /> SYNCED</span></div>
+            <div className="signal-row"><span className="signal-icon signal-icon-purple"><Icon name="network" size={16} /></span><div><strong>{primarySourceName}</strong><small>GitHub repository · configured source</small></div><span className="signal-state"><i /> {primarySourceState}</span></div>
             <div className="signal-row"><span className="signal-icon signal-icon-blue"><Icon name="grid" size={16} /></span><div><strong>{observationCount || "—"} observations indexed</strong><small>Commits, pull requests, issues and workflow runs</small></div><span className="signal-state"><i /> LIVE</span></div>
             <div className="signal-row"><span className="signal-icon signal-icon-amber"><Icon name="sparkles" size={16} /></span><div><strong>{opportunityCount || "No"} opportunity{opportunityCount === 1 ? "" : "ies"} pending</strong><small>Repeated CI failure signal · evidence attached</small></div><span className="signal-state signal-state-warm"><i /> REVIEW</span></div>
           </div>

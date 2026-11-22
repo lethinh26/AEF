@@ -42,7 +42,7 @@ async def test_source_job_queues_are_deduplicated_in_postgresql() -> None:
                         tenant_id=tenant_id,
                         asset_type="repository",
                         name="Source Jobs Fixture",
-                        canonical_ref=f"https://github.com/aeo-test/source-jobs-{tenant_id.hex}",
+                        canonical_ref=f"https://github.com/{repository_slug}",
                         metadata_json={"provider": "github"},
                     )
                 )
@@ -53,8 +53,8 @@ async def test_source_job_queues_are_deduplicated_in_postgresql() -> None:
                         tenant_id=tenant_id,
                         asset_id=asset_id,
                         provider="github",
-                            external_id=repository_slug,
-                            canonical_url=f"https://github.com/{repository_slug}",
+                        external_id=repository_slug,
+                        canonical_url=f"https://github.com/{repository_slug}",
                         access_mode="read_only",
                         status="active",
                         sync_status="idle",
